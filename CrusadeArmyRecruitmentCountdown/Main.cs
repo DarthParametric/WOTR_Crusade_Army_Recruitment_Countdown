@@ -83,14 +83,15 @@ public static class Main
 			sMsg = $@"{DaysRemain.Pluralize("day")} remaining until Crusade army recruitment renews.";
 			string sPopUp = string.Empty;
 
+			// First day of the week differences require an offset to report the correct day name.
 			StringBuilder sPopTmp = GameLogUtility.StringBuilder;
-			sPopTmp.Append($"Current Date: {TimePFFull} ({TimeReal:dddd, d MMMM, yyyy})");
+			sPopTmp.Append($"Current Date: {TimePFFull} ({TimeReal - TimeSpan.FromDays(1):dddd}, {TimeReal:d MMMM, yyyy})");
 			sPopTmp.AppendLine();
 			sPopTmp.AppendLine();
-			sPopTmp.Append($"Last Recruitment Renewal: {LastGrowthPFFull} ({LastGrowthReal:dddd, d MMMM, yyyy})");
+			sPopTmp.Append($"Last Recruitment Renewal: {LastGrowthPFFull} ({LastGrowthReal - TimeSpan.FromDays(1):dddd}, {LastGrowthReal:d MMMM, yyyy})");
 			sPopTmp.AppendLine();
 			sPopTmp.AppendLine();
-			sPopTmp.Append($"Next Recruitment Renewal: {NextGrowthPFFull} ({NextGrowthReal:dddd, d MMMM, yyyy})");
+			sPopTmp.Append($"Next Recruitment Renewal: {NextGrowthPFFull} ({NextGrowthReal - TimeSpan.FromDays(1):dddd}, {NextGrowthReal:d MMMM, yyyy})");
 			sPopTmp.AppendLine();
 			sPopTmp.AppendLine();
 			sPopTmp.Append($@"Remaining Time: {DaysRemain.Pluralize("Day")}");
