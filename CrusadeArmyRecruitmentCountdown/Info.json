@@ -1,0 +1,14 @@
+﻿{
+	"Id": "CrusadeArmyRecruitmentCountdown",
+	"DisplayName": "Crusade Army Recruitment Countdown",
+	"Author": "DarthParametric",
+	"Version": "1.0.0",
+    "GameVersion": "2.6.0",
+    "ManagerVersion": "0.31.0",
+	"Requirements": [],
+    "LoadAfter": [],
+	"AssemblyName": "CrusadeArmyRecruitmentCountdown.dll",
+	"EntryMethod": "CrusadeArmyRecruitmentCountdown.Main.Load",
+	"HomePage": "https://github.com/DarthParametric/WOTR_Crusade_Army_Recruitment_Countdown",
+	"Repository": "https://raw.githubusercontent.com/DarthParametric/WOTR_Crusade_Army_Recruitment_Countdown/master/CrusadeArmyRecruitmentCountdown/Repository.json"
+}
