@@ -2,11 +2,14 @@
 using Kingmaker;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Root;
+using Kingmaker.Blueprints.Root.Strings.GameLog;
 using Kingmaker.Kingdom;
 using Kingmaker.PubSubSystem;
 using Kingmaker.Settings;
 using Kingmaker.UI.Models.Log.CombatLog_ThreadSystem;
 using Kingmaker.UI.Models.Log.CombatLog_ThreadSystem.LogThreads.Common;
+using Kingmaker.UI.MVVM._VM.Tooltip.Templates;
+using System.Text;
 using UnityModManagerNet;
 
 namespace CrusadeArmyRecruitmentCountdown;
@@ -35,6 +38,7 @@ public static class Main
     }
 
     // Stolen from https://stackoverflow.com/a/40940304
+
     /// <summary>
     /// Pluralize: takes a word, inserts a number in front, and makes the word plural if the number is not exactly 1.
     /// </summary>
@@ -57,29 +61,54 @@ public static class Main
             return;
         }
 
-        var Time = Game.Instance.TimeController.GameTime;
-        var LastGrouth = KingdomState.Instance.RecruitsManager.LastGrowthTime;
-        var DayCount = (int)(Time - LastGrouth).TotalDays;
+		var Start = BlueprintRoot.Instance.Calendar.GetStartDate();
+		var TimePF = Game.Instance.TimeController.GameTime;
+		var TimePFFull = BlueprintRoot.Instance.Calendar.GetDateText(TimePF, GameDateFormat.Extended, false);
+		var TimeReal = Start.AddYears(2700) + TimePF;
+		var LastGrowthPF = KingdomState.Instance.RecruitsManager.LastGrowthTime;
+		var LastGrowthPFFull = BlueprintRoot.Instance.Calendar.GetDateText(LastGrowthPF, GameDateFormat.Extended, false);
+		var LastGrowthReal = Start.AddYears(2700) + LastGrowthPF;
+		var NextGrowthPF = LastGrowthPF + TimeSpan.FromDays(7);
+		var NextGrowthPFFull = BlueprintRoot.Instance.Calendar.GetDateText(NextGrowthPF, GameDateFormat.Extended, false);
+		var NextGrowthReal = Start.AddYears(2700) + NextGrowthPF;
+		var DayCount = (int)(TimePF - LastGrowthPF).TotalDays;
         var DaysRemain = Math.Abs(DayCount - 7);
-        string sMsg;
-        UnityEngine.Color MsgColour;
+		UnityEngine.Color MsgColour;
+		string sMsg;
+		CombatLogMessage message;
 
-        LogDebug($"AddRecruitmentCounter: \nCurrent Time = {BlueprintRoot.Instance.Calendar.GetDateText(Time, GameDateFormat.Full, true)} ({Time}) \nLast Recruitment Growth Time = {BlueprintRoot.Instance.Calendar.GetDateText(LastGrouth, GameDateFormat.Full, true)} ({LastGrouth}) \nCooldown Day Count = {DayCount} \nCooldown Days Remaining = {DaysRemain}");
+		if (DaysRemain > 0)
+		{
+			MsgColour = new(0f, 0.157f, 0.494f);
+			sMsg = $@"{DaysRemain.Pluralize("day")} remaining until Crusade army recruitment renews.";
+			string sPopUp = string.Empty;
 
-        if (DaysRemain > 0)
-        {
-            MsgColour = new(0f, 0.157f, 0.494f);
-            sMsg = $@"{DaysRemain.Pluralize("day")} remaining until Crusade army recruitment renews.";
-        }
-        else
-        {
-            MsgColour = new(0f, 0.50f, 0f);
-            sMsg = $@"Crusade army recruitment is now available!";
-        }
+			StringBuilder sPopTmp = GameLogUtility.StringBuilder;
+			sPopTmp.Append($"Current Date: {TimePFFull} ({TimeReal:dddd, d MMMM, yyyy})");
+			sPopTmp.AppendLine();
+			sPopTmp.AppendLine();
+			sPopTmp.Append($"Last Recruitment Renewal: {LastGrowthPFFull} ({LastGrowthReal:dddd, d MMMM, yyyy})");
+			sPopTmp.AppendLine();
+			sPopTmp.AppendLine();
+			sPopTmp.Append($"Next Recruitment Renewal: {NextGrowthPFFull} ({NextGrowthReal:dddd, d MMMM, yyyy})");
+			sPopTmp.AppendLine();
+			sPopTmp.AppendLine();
+			sPopTmp.Append($@"Remaining Time: {DaysRemain.Pluralize("Day")}");
 
-        CombatLogMessage message = new(sMsg, MsgColour, PrefixIcon.RightArrow, null, false);
+			sPopUp = sPopTmp.ToString();
+			sPopTmp.Clear();
 
-        var messageLog = LogThreadService.Instance.m_Logs[LogChannelType.Common].First(x => x is MessageLogThread);
+			TooltipTemplateCombatLogMessage CountdownTooltip = new("Crusade Army Recruitment Cooldown", sPopUp);
+			message = new(sMsg, MsgColour, PrefixIcon.RightArrow, CountdownTooltip, true);
+		}
+		else
+		{
+			MsgColour = new(0f, 0.50f, 0f);
+			sMsg = "Crusade army recruitment is now available!";
+			message = new(sMsg, MsgColour, PrefixIcon.RightArrow, null, false);
+		}
+
+		var messageLog = LogThreadService.Instance.m_Logs[LogChannelType.Common].First(x => x is MessageLogThread);
 
         messageLog.AddMessage(message);
     }
