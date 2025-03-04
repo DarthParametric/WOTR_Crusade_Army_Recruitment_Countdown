@@ -3,12 +3,16 @@ using Kingmaker;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Root;
 using Kingmaker.Blueprints.Root.Strings.GameLog;
+using Kingmaker.Controllers;
+using Kingmaker.Designers.EventConditionActionSystem.Conditions;
 using Kingmaker.Kingdom;
 using Kingmaker.PubSubSystem;
 using Kingmaker.Settings;
+using Kingmaker.UI.Common;
 using Kingmaker.UI.Models.Log.CombatLog_ThreadSystem;
 using Kingmaker.UI.Models.Log.CombatLog_ThreadSystem.LogThreads.Common;
 using Kingmaker.UI.MVVM._VM.Tooltip.Templates;
+using System.Globalization;
 using System.Text;
 using UnityModManagerNet;
 
@@ -55,7 +59,13 @@ public static class Main
 
     public static void AddRecruitmentCounter()
     {
-        if (!KingdomState.Founded || (bool)(SettingsEntity<bool>)SettingsRoot.Difficulty.AutoCrusade)
+        var CurrentCh = Game.Instance.Player.Chapter;
+		var IsCh4 = false;
+
+		if (CurrentCh == 4)
+			IsCh4 = true;
+
+		if (!KingdomState.Founded || (bool)(SettingsEntity<bool>)SettingsRoot.Difficulty.AutoCrusade || IsCh4)
         {
             LogDebug("AddRecruitmentCounter: Invalid crusade state, skipping counter.");
             return;
@@ -77,21 +87,36 @@ public static class Main
 		string sMsg;
 		CombatLogMessage message;
 
+		LogDebug($"AddRecruitmentCounter: DaysRemain = {DaysRemain}, DayCount = {DayCount}");
+
 		if (DaysRemain > 0)
 		{
+			// Since trying to adopt Owlcat's use of CultureInfo.InvariantCulture/DateTimeStyles.AssumeUniversal wasn't working,
+			// first day of the week differences require an offset to report the Gregorian day name that properly matches the PF day.
+			CultureInfo CI = CultureInfo.CurrentCulture;
+			DayOfWeek WeekStart = CI.DateTimeFormat.FirstDayOfWeek;
+			int DayOffset = 0;
+
+			if (WeekStart != DayOfWeek.Sunday)
+			{
+				DayOffset = (int)WeekStart;
+				LogDebug($"AddRecruitmentCounter: System culture is {CI}, first day of week is {WeekStart}, DayOffset = -{DayOffset}");
+			}
+
+			LogDebug($"AddRecruitmentCounter: Current chapter is {CurrentCh}, current date is {BlueprintRoot.Instance.Calendar.GetDateText(TimePF, GameDateFormat.Extended, false)} / {TimeReal - TimeSpan.FromDays(DayOffset):dddd}, {TimeReal:d MMMM, yyyy}");
+
 			MsgColour = new(0f, 0.157f, 0.494f);
 			sMsg = $@"{DaysRemain.Pluralize("day")} remaining until Crusade army recruitment renews.";
 			string sPopUp = string.Empty;
 
-			// First day of the week differences require an offset to report the correct day name.
 			StringBuilder sPopTmp = GameLogUtility.StringBuilder;
 			sPopTmp.Append($"Current Date: {TimePFFull} ({TimeReal - TimeSpan.FromDays(1):dddd}, {TimeReal:d MMMM, yyyy})");
 			sPopTmp.AppendLine();
 			sPopTmp.AppendLine();
-			sPopTmp.Append($"Last Recruitment Renewal: {LastGrowthPFFull} ({LastGrowthReal - TimeSpan.FromDays(1):dddd}, {LastGrowthReal:d MMMM, yyyy})");
+			sPopTmp.Append($"Last Recruitment Renewal: {LastGrowthPFFull} ({LastGrowthReal - TimeSpan.FromDays(DayOffset):dddd}, {LastGrowthReal:d MMMM, yyyy})");
 			sPopTmp.AppendLine();
 			sPopTmp.AppendLine();
-			sPopTmp.Append($"Next Recruitment Renewal: {NextGrowthPFFull} ({NextGrowthReal - TimeSpan.FromDays(1):dddd}, {NextGrowthReal:d MMMM, yyyy})");
+			sPopTmp.Append($"Next Recruitment Renewal: {NextGrowthPFFull} ({NextGrowthReal - TimeSpan.FromDays(DayOffset):dddd}, {NextGrowthReal:d MMMM, yyyy})");
 			sPopTmp.AppendLine();
 			sPopTmp.AppendLine();
 			sPopTmp.Append($@"Remaining Time: {DaysRemain.Pluralize("Day")}");
@@ -111,6 +136,8 @@ public static class Main
 
 		var messageLog = LogThreadService.Instance.m_Logs[LogChannelType.Common].First(x => x is MessageLogThread);
 
-        messageLog.AddMessage(message);
-    }
+		messageLog.AddMessage(message);
+
+		UIUtility.SendWarning(sMsg, false);
+	}
 }

@@ -7,7 +7,6 @@ namespace CrusadeArmyRecruitmentCountdown.Events
     {
         public void OnNewDay()
         {
-            LogDebug("Events.OnDayChanged: OnNewDay event handler triggered.");
             AddRecruitmentCounter();
         }
     }
